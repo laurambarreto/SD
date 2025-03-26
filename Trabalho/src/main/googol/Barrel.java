@@ -1,5 +1,6 @@
 package googol;
 
+import java.net.*;
 import java.rmi.*;
 import java.rmi.registry.*;
 import java.rmi.server.*;
@@ -8,58 +9,49 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Barrel extends UnicastRemoteObject implements Barrel_int {
     ConcurrentHashMap <String, Set <String>> processed;
-    private Set <String> seenUrls;
 
     public Barrel () throws RemoteException {
         super ();
         processed = new ConcurrentHashMap<>();
-        seenUrls = ConcurrentHashMap.newKeySet();
     }
 
     public static void main(String[] args) {
         try {
-            Gateway server = new Gateway ();
+            Barrel server = new Barrel();
             Registry registry = LocateRegistry.createRegistry(Integer.parseInt(args[0]));
             registry.rebind ("barrel", server);
+            Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[1], Integer.parseInt(args[2])).lookup("googol");
+            
+            InetAddress ip = InetAddress.getLocalHost();
+            String ipString = ip.getHostAddress();
+            String ip_port = ipString + " " + args[0];
+            gateway.addBarrel(ip_port);
 
-        } catch (RemoteException e) {
-            System.out.println ("Error creating server: " + e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+
     }        
 
     public Set <String> search (String [] line) throws RemoteException {
         try {
-            synchronized (processed) {
-                if (line.length == 0) {
-                    return null;
-                }
-        
+            synchronized (processed){
                 Set<String> finalResults = new HashSet<>();
                 Set<String> results = processed.get(line[0]);
-        
-                for (String url : results) {
-                    boolean match = true;
-        
-                    for (int i = 1; i < line.length; i++) {
-                        Set<String> wordResults = processed.get(line[i]);
-                        if (wordResults == null || !wordResults.contains(url)) {
-                            match = false;
-                            break;
-                        }
-                    }
-                    if (match) {
-                        finalResults.add(url);
-                    }
+                
+                for (String word : line) {
+                    results.retainAll(processed.get(word));
                 }
-        
+                
                 if (finalResults.isEmpty()) {
                     return null;
-        
+                    
                 } else {
                     return finalResults;
                 }
             }
-            
+                
         } catch (Exception e) {
             e.printStackTrace();
         }

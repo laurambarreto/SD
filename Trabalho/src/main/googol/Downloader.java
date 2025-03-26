@@ -11,7 +11,7 @@ public class Downloader {
     private static ConcurrentHashMap <String, Set <String>> reachable = new ConcurrentHashMap<>();
     public static void main(String[] args) {
         try {
-            Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(8012).lookup("googol");
+            Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[0], Integer.parseInt(args[1])).lookup("googol");
 
             while (true) {
                 String url = gateway.takeNext ();

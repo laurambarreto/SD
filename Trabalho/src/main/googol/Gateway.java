@@ -12,12 +12,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
-    private Set <String> seenUrls;
-    private Set <String> availableBarrels;
+    Set <String> availableBarrels;
 
     public Gateway () throws RemoteException {
         super ();
         toBeProcessed = new LinkedBlockingQueue <String> ();
+        availableBarrels = new HashSet<>();
     
     }
 
@@ -45,20 +45,19 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     }
 
     public void indexUrl (String newUrl) throws java.rmi.RemoteException{
-        if (seenUrls.add(newUrl)) { // como é um set, se der para adicionar, tem de ser processado primeiro
-            try {
-                toBeProcessed.put (newUrl);
-                seenUrls.add (newUrl);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RemoteException ("Interrupted while waiting to put new URL", e);
-            }
-
+        try {
+            toBeProcessed.put (newUrl);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RemoteException ("Interrupted while waiting to put new URL", e);
         }
+
     }
 
     public Set <String> search (String [] line) throws RemoteException {
         Barrel_int barrel;
+        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
+
 
         for (String ip_port: availableBarrels){
             String [] ipport = ip_port.split (" ");
@@ -70,16 +69,16 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
             } catch (Exception e){
                 e.printStackTrace();
-            }
-            
 
+            }
         }
-        return null;
+        throw new RemoteException ("Waiting for a barrel to connect...");
 
     }
 
     public void addToIndex(String word, String url) throws RemoteException {
         Barrel_int barrel;
+        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for barrel to connect...");
 
         for (String ip_port: availableBarrels){
             String [] ipport = ip_port.split (" ");
@@ -88,9 +87,18 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
                 barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
                 barrel.addToIndex (word,url);
 
-            } catch (Exception e){
+            } catch (RemoteException e){
                 e.printStackTrace();
+            }catch (Exception ee){
+                ee.printStackTrace();
             }
+        }
+    }
+
+    public void addBarrel (String ip_port) throws RemoteException{
+
+        synchronized (availableBarrels){
+            availableBarrels.add(ip_port);
         }
     }
 

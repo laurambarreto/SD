@@ -1,3 +1,3 @@
 cd target/
-java -cp "./lib/jsoup-1.18.3.jar:." googol.Client 8002
+java -cp "./lib/jsoup-1.18.3.jar:." googol.Client 127.0.0.1 8000
 cd ..

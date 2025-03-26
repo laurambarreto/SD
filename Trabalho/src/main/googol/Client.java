@@ -4,23 +4,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 public class Client{
     public static void main (String [] args) throws NotBoundException, IOException{
-        Registry registry = LocateRegistry.getRegistry (args [0]);
-        Gateway_int gateway = (Gateway_int) registry.lookup ("googol");
+        Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[0], Integer.parseInt(args[1])).lookup("googol");
 
         InputStreamReader in = new InputStreamReader (System.in);
         BufferedReader reader = new BufferedReader (in);
 
         System.out.println("Server ready. Waiting for input...");
-        gateway.indexUrl("https://pt.wikipedia.org/wiki/");
-
+        try {
+            gateway.indexUrl("https://pt.wikipedia.org/wiki/");
+        } catch (Exception e) {
+            e.printStackTrace(); 
+        }
+        
         while (true){
             menu ();
             Integer num = Integer.parseInt(reader.readLine ());
@@ -32,12 +31,13 @@ public class Client{
                         System.out.print ("Search: ");
                         String input = reader.readLine();
                         String [] line = input.split (" ");
-                        Set <String> results = gateway.search (line);
         
                         if (line.length == 0){
                             System.out.println ();
                             System.out.println("Empty input, please enter a valid word!");
                         }
+
+                        Set <String> results = gateway.search (line);
                         
                         if (results == null) {
                             System.out.println ();
@@ -52,16 +52,17 @@ public class Client{
                             System.out.println (url);
                         }
                         System.out.println ();
-                        continue;
+                       
         
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    
+                    break;
                 case 2:
                     System.out.print ("Insert Url: ");
                     String url = reader.readLine ();
                     gateway.indexUrl(url);
+                    break;
             }
         }
     }

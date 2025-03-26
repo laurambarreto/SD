@@ -7,4 +7,6 @@ public interface Gateway_int extends Remote {
     public void indexUrl (String newUrl) throws RemoteException;
     public Set <String> search (String [] line) throws RemoteException;
     public void addToIndex (String word, String url) throws RemoteException;
+    public void addBarrel (String ip_port) throws RemoteException;
+
 }
