@@ -1,8 +1,6 @@
 package googol;
 import java.rmi.registry.*;
 import java.util.*;
-
-
 import javax.lang.model.*;
 import org.jsoup.*;
 import org.jsoup.nodes.*;

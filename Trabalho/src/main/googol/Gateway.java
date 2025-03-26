@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
-
+    private Set <String> seenUrls;
     private Set <String> availableBarrels;
 
     public Gateway () throws RemoteException {
@@ -44,6 +44,19 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         return toProcess;
     }
 
+    public void indexUrl (String newUrl) throws java.rmi.RemoteException{
+        if (seenUrls.add(newUrl)) { // como é um set, se der para adicionar, tem de ser processado primeiro
+            try {
+                toBeProcessed.put (newUrl);
+                seenUrls.add (newUrl);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RemoteException ("Interrupted while waiting to put new URL", e);
+            }
+
+        }
+    }
+
     public Set <String> search (String [] line) throws RemoteException {
         Barrel_int barrel;
 
@@ -63,6 +76,22 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         }
         return null;
 
+    }
+
+    public void addToIndex(String word, String url) throws RemoteException {
+        Barrel_int barrel;
+
+        for (String ip_port: availableBarrels){
+            String [] ipport = ip_port.split (" ");
+
+            try{
+                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                barrel.addToIndex (word,url);
+
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
 }
