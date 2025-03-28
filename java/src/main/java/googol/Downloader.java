@@ -60,7 +60,7 @@ public class Downloader {
                 String [] ipport = ip_port.split (" ");
                 
                 try{
-                    barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                    barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
                     barrel.addToIndex(words, reachable, url);
 
                 } catch (Exception e){

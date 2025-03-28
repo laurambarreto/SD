@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,42 +41,41 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int {
     }        
 
     public List <String> search (String [] line) throws RemoteException {
-        try {
-            synchronized (processed){
-                Set<String> results = new HashSet<>();
-                
-                for (String word : line) {
-                    results.retainAll(processed.get(word));
-                }
-                
-                if (results.isEmpty()) {
-                    return null;
-                    
-                } else {
-                    ConcurrentHashMap <String,Integer> filtered = new ConcurrentHashMap<>();
-
-                    for (String result: results){
-                        Integer num = reachable.get(result).size();
-                        filtered.put (result,num);
-                    }
-                    
-                    List<String> sortedUrls = filtered.entrySet()
-                        .stream()
-                        .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
-                        .map(Map.Entry::getKey) // Only obtains URLS
-                        .toList();
-
-                    return sortedUrls;
-
-                }
+        System.out.println("Estou sim");
+        synchronized (processed){
+            Set<String> results; 
+            for (String word : line)){
+                results = processed.get(word);
+                if(results == null || results.isEmpty()) continue;
+                results.add(url);
             }
+            System.out.println(results);
+            System.out.println("HELP");
+            for (String word : line) {
+                results.retainAll(processed.get(word));
+            }
+            System.out.println("nevermind");
+            if (results.isEmpty()) {
+                return Collections.emptyList();
                 
-        } catch (Exception e) {
-            e.printStackTrace();
+            } else {
+                ConcurrentHashMap <String,Integer> filtered = new ConcurrentHashMap<>();
+
+                for (String result: results){
+                    Integer num = reachable.get(result).size();
+                    filtered.put (result,num);
+                }
+                
+                List<String> sortedUrls = filtered.entrySet()
+                    .stream()
+                    .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
+                    .map(Map.Entry::getKey) // Only obtains URLS
+                    .toList();
+
+                return sortedUrls;
+
+            }
         }
-
-        return null;
-
     }
 
     public void addToIndex (Set<String> words, Set<String> links, String url) throws RemoteException {
@@ -83,9 +83,9 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int {
         synchronized (processed) {
             for (String word: words){
                 processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
-                if (processed.get (word).size () > xnum) {
-                    stopWord = true;
-                }
+                //if (processed.get (word).size () > xnum) {
+                    //stopWord = true;
+                //}
             }
         }
 

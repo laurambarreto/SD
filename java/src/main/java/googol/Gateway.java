@@ -55,17 +55,19 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     }
 
     public List <String> search (String [] line) throws RemoteException {
+        System.out.println("Looking for barrel...");
         Barrel_int barrel;
         if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
-
+        System.out.println("Barrels exist, but...");
 
         for (String ip_port: availableBarrels){
             String [] ipport = ip_port.split (" ");
             
             try{
-                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
+                System.out.println("Barrels, are you ok?");
                 List <String> results = barrel.search (line);
-
+                System.out.println("barrel!!!!");
                 return results;
 
             } catch (Exception e){
@@ -100,7 +102,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
             String [] ipport = ip_port.split (" ");
             
             try{
-                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
                 Set <String> results = barrel.getReachableUrls (url);
                 return results;
 
