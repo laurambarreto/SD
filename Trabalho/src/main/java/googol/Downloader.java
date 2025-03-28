@@ -1,4 +1,5 @@
 package googol;
+import java.rmi.RemoteException;
 import java.rmi.registry.*;
 import java.util.*;
 import javax.lang.model.*;
@@ -6,9 +7,10 @@ import org.jsoup.*;
 import org.jsoup.nodes.*;
 import org.jsoup.select.*;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.lang.model.element.Element;
 
 public class Downloader {
-    private static ConcurrentHashMap <String, Set <String>> reachable = new ConcurrentHashMap<>();
+    static Set <String> reachable = new HashSet<>();
     public static void main(String[] args) {
         try {
             Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[0], Integer.parseInt(args[1])).lookup("googol");
@@ -34,21 +36,41 @@ public class Downloader {
             Elements links = doc.select("a[href]");
             String title = doc.title();
             String text = doc.text();
-            String [] words = text.split ("\\s+"); //tokenizer!!!!
-
-            for (String word : words) {
-                gateway.addToIndex (word.toLowerCase(), url);
+            StringTokenizer st = new StringTokenizer(doc.body().text());
+            HashSet<String> words = new HashSet<>();
+            while (st.hasMoreTokens()){
+                words.add(st.nextToken());
             }
 
-            for (Element link: links) {
-                String href = link.attr("abs:href");
-                if (!href.isEmpty()) {
-                    reachable.computeIfAbsent(url, k -> new HashSet<>()).add(href);
-                    gateway.indexUrl (href);
+            for (Element link: links){
+                String href = Element.absUrl ("href");
+
+                if (!href.isEmpty()){
+                    reachable.add (href);
                 }
+            }
+
+            Set<String> availableBarrels = gateway.getAvailableBarrels ();
+            Barrel_int barrel;
+        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
+
+
+        for (String ip_port: availableBarrels){
+            String [] ipport = ip_port.split (" ");
+            
+            try{
+                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                barrel.addToIndex(words, reachable, url);
+
+
+            } catch (Exception e){
+                e.printStackTrace();
 
             }
-                //Todo: Read JSOUP documentation and parse the html to index the keywords. 
+        }
+
+
+            //Todo: Read JSOUP documentation and parse the html to index the keywords. 
             //Then send back to server via index.addToIndex(...)
         
         } catch (Exception e) {

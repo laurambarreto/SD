@@ -2,9 +2,9 @@ package googol;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.rmi.*;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
-import java.util.Set;
+import java.util.List;
 
 public class Client{
     public static void main (String [] args) throws NotBoundException, IOException{
@@ -37,7 +37,7 @@ public class Client{
                             System.out.println("Empty input, please enter a valid word!");
                         }
 
-                        Set <String> results = gateway.search (line);
+                        List <String> results = gateway.search (line);
                         
                         if (results == null) {
                             System.out.println ();
@@ -60,9 +60,20 @@ public class Client{
                     break;
                 case 2:
                     System.out.print ("Insert Url: ");
-                    String url = reader.readLine ();
-                    gateway.indexUrl(url);
+                    String url1 = reader.readLine ();
+                    gateway.indexUrl(url1);
                     break;
+
+                case 3:
+                    System.out.println ("Insert Url: ");
+                    String url2 = reader.readLine ();
+                    System.out.println ("The inserted url is available in: ");
+                    System.out.println ();
+                    for (String url: gateway.getReachableUrls(url2)){
+                        System.out.println (url);
+                    }
+                    break;
+
             }
         }
     }
@@ -71,5 +82,6 @@ public class Client{
         System.out.println ("Choose what you want to do: ");
         System.out.println ("1 - Search");
         System.out.println ("2 - Add a new URL to process");
+        System.out.println ("3 - Discover pages that contain Url");
     }
 }

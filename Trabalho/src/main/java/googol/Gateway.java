@@ -7,8 +7,8 @@ import java.rmi.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.List;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
@@ -54,7 +54,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
     }
 
-    public Set <String> search (String [] line) throws RemoteException {
+    public List <String> search (String [] line) throws RemoteException {
         Barrel_int barrel;
         if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
 
@@ -64,7 +64,8 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
             
             try{
                 barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
-                Set <String> results = barrel.search (line);
+                List <String> results = barrel.search (line);
+
                 return results;
 
             } catch (Exception e){
@@ -76,30 +77,41 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
     }
 
-    public void addToIndex(String word, String url) throws RemoteException {
-        Barrel_int barrel;
-        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for barrel to connect...");
-
-        for (String ip_port: availableBarrels){
-            String [] ipport = ip_port.split (" ");
-
-            try{
-                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
-                barrel.addToIndex (word,url);
-
-            } catch (RemoteException e){
-                e.printStackTrace();
-            }catch (Exception ee){
-                ee.printStackTrace();
-            }
-        }
-    }
-
     public void addBarrel (String ip_port) throws RemoteException{
 
         synchronized (availableBarrels){
             availableBarrels.add(ip_port);
         }
     }
+
+    public Set <String> getAvailableBarrels () throws RemoteException{
+        
+        synchronized (availableBarrels) {
+            return availableBarrels;
+        }
+    }
+
+    public Set <String> getReachableUrls (String url) throws RemoteException {
+        Barrel_int barrel;
+        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
+
+
+        for (String ip_port: availableBarrels){
+            String [] ipport = ip_port.split (" ");
+            
+            try{
+                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                Set <String> results = barrel.getReachableUrls (url);
+                return results;
+
+            } catch (Exception e){
+                e.printStackTrace();
+
+            }
+        }
+        throw new RemoteException ("Waiting for a barrel to connect...");
+
+    }
+    
 
 }
