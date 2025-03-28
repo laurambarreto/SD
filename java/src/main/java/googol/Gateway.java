@@ -35,7 +35,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     public String takeNext () throws RemoteException {
         String toProcess;
         try {
-            toProcess = toBeProcessed.take (); // se a fila estiver vazia, bloqueia
+            toProcess = toBeProcessed.take (); // if the queue is empty, blocks
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -44,9 +44,11 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         return toProcess;
     }
 
-    public void indexUrl (String newUrl) throws java.rmi.RemoteException{
+    public void indexUrl (Set<String> newUrl) throws java.rmi.RemoteException{
         try {
-            toBeProcessed.put (newUrl);
+            for (String url : newUrl){
+                toBeProcessed.put(url);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RemoteException ("Interrupted while waiting to put new URL", e);
@@ -55,19 +57,16 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     }
 
     public List <String> search (String [] line) throws RemoteException {
-        System.out.println("Looking for barrel...");
         Barrel_int barrel;
         if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
-        System.out.println("Barrels exist, but...");
 
         for (String ip_port: availableBarrels){
             String [] ipport = ip_port.split (" ");
             
             try{
                 barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
-                System.out.println("Barrels, are you ok?");
                 List <String> results = barrel.search (line);
-                System.out.println("barrel!!!!");
+                System.out.println("You're connected to a barrel!");
                 return results;
 
             } catch (Exception e){

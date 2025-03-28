@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class Downloader {
-    static Set <String> reachable = new HashSet<>();
+    static Set <String> links = new HashSet<>();
     public static void main(String[] args) {
         try {
             Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[0], Integer.parseInt(args[1])).lookup("googol");
@@ -34,7 +34,7 @@ public class Downloader {
             System.out.println ("Processing: " + url);
        
             Document doc = Jsoup.connect(url).get();
-            Elements links = doc.select("a[href]");
+            Elements elements = doc.select("a[href]");
             String title = doc.title();
             String text = doc.text();
             StringTokenizer st = new StringTokenizer(doc.body().text());
@@ -43,11 +43,11 @@ public class Downloader {
                 words.add(st.nextToken());
             }
 
-            for (Element link: links){
+            for (Element link: elements){
                 String href = link.attr ("href");
 
                 if (!href.isEmpty()){
-                    reachable.add (href);
+                    links.add (href);
                 }
             }
 
@@ -61,7 +61,8 @@ public class Downloader {
                 
                 try{
                     barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
-                    barrel.addToIndex(words, reachable, url);
+                    barrel.addToIndex(words, links, url);
+                    gateway.indexUrl(links);
 
                 } catch (Exception e){
                     e.printStackTrace();

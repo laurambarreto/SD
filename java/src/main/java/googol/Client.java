@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Client{
     public static void main (String [] args) throws NotBoundException, IOException{
@@ -15,7 +17,10 @@ public class Client{
 
         System.out.println("Server ready. Waiting for input...");
         try {
-            gateway.indexUrl("https://pt.wikipedia.org/wiki/");
+            Set <String> urls = new HashSet<>();
+            urls.add ("https://pt.wikipedia.org/wiki/");
+            gateway.indexUrl(urls);
+
         } catch (Exception e) {
             e.printStackTrace(); 
         }
@@ -39,7 +44,7 @@ public class Client{
 
                         List <String> results = gateway.search (line);
                         
-                        if (results == null) {
+                        if (results == null || results.isEmpty()) {
                             System.out.println ();
                             System.out.println ("No results found");
                             System.out.println ();
@@ -61,12 +66,15 @@ public class Client{
                 case 2:
                     System.out.print ("Insert Url: ");
                     String url1 = reader.readLine ();
-                    gateway.indexUrl(url1);
+                    Set <String> urls = new HashSet<>();
+                    urls.add (url1);
+                    gateway.indexUrl(urls);
                     break;
 
                 case 3:
-                    System.out.println ("Insert Url: ");
+                    System.out.print ("Insert Url: ");
                     String url2 = reader.readLine ();
+                    System.out.println ();
                     System.out.println ("The inserted url is available in: ");
                     System.out.println ();
                     for (String url: gateway.getReachableUrls(url2)){
@@ -79,6 +87,7 @@ public class Client{
     }
 
     public static void menu () {
+        System.out.println ();
         System.out.println ("Choose what you want to do: ");
         System.out.println ("1 - Search");
         System.out.println ("2 - Add a new URL to process");
