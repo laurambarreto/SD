@@ -1,7 +1,8 @@
 Como executar:
 
-NOTA: Poderá ter de converter os ficheiros .sh para usarem as terminações e end of line characters corretas 
-do seu sistema operativo; Se usa Windows recomendamos utilizar os ficheiros .cmd.
+NOTA: Poderá ter de converter os ficheiros .sh para usar as terminações e end of line characters corretas 
+do seu sistema operativo; Se usa Windows recomendamos utilizar os ficheiros .cmd; 
+Para além disso, altere os IPs necessários e os números das portas no caso de estarem ocupadas.
 
 Escrever em terminais separados:
 
