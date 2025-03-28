@@ -79,9 +79,13 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int {
     }
 
     public void addToIndex (Set<String> words, Set<String> links, String url) throws RemoteException {
+        boolean stopWord = false;
         synchronized (processed) {
             for (String word: words){
                 processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
+                if (processed.get (word).size () > xnum) {
+                    stopWord = true;
+                }
             }
         }
 

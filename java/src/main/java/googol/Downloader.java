@@ -1,10 +1,14 @@
 package googol;
 import java.rmi.RemoteException;
-import java.rmi.registry.*;
-import java.util.*;
-import org.jsoup.*;
-import org.jsoup.nodes.*;
-import org.jsoup.select.*;
+import java.rmi.registry.LocateRegistry;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class Downloader {
     static Set <String> reachable = new HashSet<>();
@@ -49,22 +53,21 @@ public class Downloader {
 
             Set<String> availableBarrels = gateway.getAvailableBarrels ();
             Barrel_int barrel;
-        if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
+            if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
 
 
-        for (String ip_port: availableBarrels){
-            String [] ipport = ip_port.split (" ");
-            
-            try{
-                barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
-                barrel.addToIndex(words, reachable, url);
+            for (String ip_port: availableBarrels){
+                String [] ipport = ip_port.split (" ");
+                
+                try{
+                    barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1]));
+                    barrel.addToIndex(words, reachable, url);
 
+                } catch (Exception e){
+                    e.printStackTrace();
 
-            } catch (Exception e){
-                e.printStackTrace();
-
+                }
             }
-        }
 
 
             //Todo: Read JSOUP documentation and parse the html to index the keywords. 
