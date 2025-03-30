@@ -96,7 +96,6 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         Barrel_int barrel;
         if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
 
-
         for (String ip_port: availableBarrels){
             String [] ipport = ip_port.split (" ");
             

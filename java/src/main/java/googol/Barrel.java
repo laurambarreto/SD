@@ -111,26 +111,25 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
     public List <String> search (String [] line) throws RemoteException {
         synchronized (processed){
             Set<String> results = null; 
+            Set<String> found;
             for (String word : line){
-                results = processed.get(word);
-                if(!(results == null || results.isEmpty())){
-                    break;
+                found = processed.get(word);
+
+                if(found == null || found.isEmpty()){
+                    return Collections.emptyList();
                 } 
-
-            }
-            if(results == null || results.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            for (String word : line) {
-                Set<String> found = processed.get(word);
-                if(found == null || found.isEmpty()) {
-                    continue;
+                
+                if(results == null || results.isEmpty()){
+                    results = found;
                 }
-                results.retainAll(found);
+
+                else{
+                    results.retainAll(found);
+                }
+
             }
             
-            if (results.isEmpty()) {
+            if (results == null || results.isEmpty()) {
                 return Collections.emptyList();
                 
             } else {

@@ -36,7 +36,6 @@ public class Downloader {
             Document doc = Jsoup.connect(url).get();
             Elements elements = doc.select("a[href]");
             String title = doc.title();
-            String text = doc.text();
             StringTokenizer st = new StringTokenizer(doc.body().text());
             HashSet<String> words = new HashSet<>();
             while (st.hasMoreTokens()){
@@ -69,10 +68,6 @@ public class Downloader {
 
                 }
             }
-
-
-            //Todo: Read JSOUP documentation and parse the html to index the keywords. 
-            //Then send back to server via index.addToIndex(...)
         
         } catch (Exception e) {
             e.printStackTrace();
