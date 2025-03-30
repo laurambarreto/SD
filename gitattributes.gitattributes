@@ -1,5 +1,0 @@
-# Keep LF for all files
-* text=auto eol=lf
-
-# Force CRLF only for .cmd files
-*.cmd text eol=crlf
