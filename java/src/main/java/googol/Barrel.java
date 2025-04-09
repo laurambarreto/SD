@@ -7,12 +7,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +24,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializable {
     ConcurrentHashMap <String, Set <String>> processed;
-    ConcurrentHashMap <String, Set <String>> reachable = new ConcurrentHashMap<>();
+    ConcurrentHashMap <String, Set <String>> reachable;
+    ConcurrentHashMap <String, ArrayList <String>> elements; 
+    ConcurrentHashMap <String, Integer> wordCount; // Para contar a quantas vezes cada palavra aparece
     
     public Barrel () throws RemoteException {
         super ();
         processed = new ConcurrentHashMap<>();
+        reachable = new ConcurrentHashMap<>();
+        elements = new ConcurrentHashMap<>();
+        wordCount = new ConcurrentHashMap<>();
+
     }
 
     public static void main(String[] args) {
@@ -87,7 +96,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 File file = new File(filename);
                 File parentDir = file.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
-                    parentDir.mkdirs();  // Create the directory structure
+                    parentDir.mkdirs();  // Criar o diretório pai se não existir
                 }
                 try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
                     out.writeObject(server);
@@ -109,7 +118,9 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
     }        
 
     public List <String> search (String [] line) throws RemoteException {
+
         synchronized (processed){
+            
             Set<String> results = null; 
             Set<String> found;
             for (String word : line){
@@ -143,7 +154,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 List<String> sortedUrls = filtered.entrySet()
                     .stream()
                     .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
-                    .map(Map.Entry::getKey) // Only obtains URLS
+                    .map(Map.Entry::getKey) // apenas obtém os URLs
                     .toList();
 
                 return sortedUrls;
@@ -152,20 +163,46 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         }
     }
 
-    public void addToIndex (Set<String> words, Set<String> links, String url) throws RemoteException {
-        boolean stopWord = false;
+    public void addToIndex (List<String> words, Set<String> links, ArrayList <String> elems, String url) throws RemoteException {
+        
         synchronized (processed) {
-            for (String word: words){
-                processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
-                //if (processed.get (word).size () > xnum) {
-                    //stopWord = true;
-                    //blocks the stop word 
-                //} we tried to implement the stop words but we didn't have time
+            
+            synchronized (wordCount) {
+                Set<String> wordsList = new HashSet<>();
+                for (String word: words){
+                    wordCount.merge(word, 1, Integer::sum);
+
+                    if(wordCount.get(word) > 1000) {
+                        wordsList.add(word);
+                    }
+                }
+                List<String> sortedWords = wordCount.entrySet()
+                    .stream()
+                    .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
+                    .map(Map.Entry::getKey)
+                    .toList(); 
+
+                sortedWords = sortedWords.subList(0, sortedWords.size());// a dividir por quartil)  
+                
+                for (String word: sortedWords){
+                    processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
+    
+                }
             }
         }
 
-        for (String link: links){
-            reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
+        synchronized (reachable) {
+            for (String link: links){
+                reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
+            }
+        }
+
+        synchronized (elements) {
+            for (String word: words){
+                for (String element: elems){
+                    elements.computeIfAbsent (url, k -> new ArrayList<>()).add(element);
+                }
+            }
         }
         
     }
