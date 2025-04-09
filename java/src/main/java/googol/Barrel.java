@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -15,7 +14,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -163,7 +161,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         }
     }
 
-    public void addToIndex (List<String> words, Set<String> links, ArrayList <String> elems, String url) throws RemoteException {
+    public void addToIndex (ArrayList<String> words, Set<String> links, ArrayList <String> elems, String url) throws RemoteException {
         
         synchronized (processed) {
             

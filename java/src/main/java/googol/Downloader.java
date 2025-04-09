@@ -91,8 +91,7 @@ public class Downloader {
                 // Conectar ao barrel e adicionar os dados processados
                 try{
                     barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
-                    Set <String> nonStopWords = barrel.stopWords(words);
-                    barrel.addToIndex(nonStopWords, links, elems, url);
+                    barrel.addToIndex(words, links, elems, url);
                     gateway.putUrl(links);
 
                 } catch (Exception e){
