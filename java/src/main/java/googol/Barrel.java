@@ -164,15 +164,11 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
     public void addToIndex (ArrayList<String> words, Set<String> links, ArrayList <String> elems, String url) throws RemoteException {
         
         synchronized (processed) {
-            
+
             synchronized (wordCount) {
                 Set<String> wordsList = new HashSet<>();
                 for (String word: words){
                     wordCount.merge(word, 1, Integer::sum);
-
-                    if(wordCount.get(word) > 1000) {
-                        wordsList.add(word);
-                    }
                 }
                 List<String> sortedWords = wordCount.entrySet()
                     .stream()
