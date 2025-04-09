@@ -181,7 +181,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 for (String word: words){
                     if (!stopWords.contains(word)){
                         processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
-    
+                    }
                 }
             }
         }
