@@ -166,7 +166,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         synchronized (processed) {
 
             synchronized (wordCount) {
-                Set<String> wordsList = new HashSet<>();
+                Set<String> stopWords = new HashSet<>();
                 for (String word: words){
                     wordCount.merge(word, 1, Integer::sum);
                 }
@@ -177,9 +177,10 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                     .toList(); 
 
                 sortedWords = sortedWords.subList(0, sortedWords.size());// a dividir por quartil)  
-                
-                for (String word: sortedWords){
-                    processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
+                stopWords.addAll(sortedWords);
+                for (String word: words){
+                    if (!stopWords.contains(word)){
+                        processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
     
                 }
             }
