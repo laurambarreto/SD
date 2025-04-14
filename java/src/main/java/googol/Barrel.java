@@ -2,6 +2,7 @@ package googol;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -67,13 +68,19 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
             if(update == false){
                 try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("../resources/barrel1.obj"))) {
-                    System.err.println("Looking for backup");
-                    Barrel object = (Barrel)ois.readObject(); // Read the object from the binary file
+                    System.out.println("Looking for backup...");
+                    Barrel object = (Barrel) ois.readObject();
                     server.processed = object.processed;
                     server.reachable = object.reachable;
-                
-                }catch (Exception e) {
-                    System.err.println("No backup found");
+
+                } catch (FileNotFoundException e) {
+                    System.err.println("Backup file not found.");
+                } catch (IOException e) {
+                    System.err.println("Error reading the backup file.");
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    System.err.println("Backup file format is incorrect.");
+                    e.printStackTrace();
                 }
             }
 
@@ -181,28 +188,28 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 for (String word: words){
                     if (!stopWords.contains(word)){
                         processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
+                    
+                    }
+                }
+            }
+
+            synchronized (reachable) {
+                for (String link: links){
+                    reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
+                }
+            }
+
+            synchronized (elements) {
+                for (String word: words){
+                    for (String element: elems){
+                        elements.computeIfAbsent (url, k -> new ArrayList<>()).add(element);
                     }
                 }
             }
         }
-
-        synchronized (reachable) {
-            for (String link: links){
-                reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
-            }
-        }
-
-        synchronized (elements) {
-            for (String word: words){
-                for (String element: elems){
-                    elements.computeIfAbsent (url, k -> new ArrayList<>()).add(element);
-                }
-            }
-        }
-        
     }
-
-    public Set <String> getReachableUrls (String url){
+    
+    public Set <String> getReachableUrls (String url) throws RemoteException {
         return reachable.get (url);
     }
 
