@@ -54,6 +54,9 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                         Barrel temp = (Barrel) barrel.getUpdate();
                         server.processed = temp.processed;
                         server.reachable = temp.reachable;
+                        server.elements = temp.elements;
+                        server.wordCount = temp.wordCount;
+                        System.out.println ("Barrel updated...");
                         update = true;
                         break;
 
@@ -67,17 +70,32 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             }
 
             if(update == false){
-                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("../resources/barrel1.obj"))) {
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("resources/barrel1.obj"))) {
                     System.out.println("Looking for backup...");
                     Barrel object = (Barrel) ois.readObject();
                     server.processed = object.processed;
                     server.reachable = object.reachable;
+                    server.elements = object.elements;
+                    server.wordCount = object.wordCount;
+                    System.out.println("Backup loaded successfully.");
 
+                    for (String key : server.processed.keySet()) {
+                        System.out.println("Key: " + key);
+                        System.out.println("Value: " + server.processed.get(key));
+                    }
+
+                    for (String key : server.reachable.keySet()) {
+                        System.out.println("Key: " + key);
+                        System.out.println("Value: " + server.reachable.get(key));
+                    }
+                
                 } catch (FileNotFoundException e) {
                     System.err.println("Backup file not found.");
+
                 } catch (IOException e) {
                     System.err.println("Error reading the backup file.");
                     e.printStackTrace();
+
                 } catch (ClassNotFoundException e) {
                     System.err.println("Backup file format is incorrect.");
                     e.printStackTrace();
@@ -100,12 +118,15 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 String filename = "resources/barrel1.obj";
                 File file = new File(filename);
                 File parentDir = file.getParentFile();
+
                 if (parentDir != null && !parentDir.exists()) {
                     parentDir.mkdirs();  // Criar o diretório pai se não existir
                 }
+
                 try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
                     out.writeObject(server);
                     System.out.println("Saving barrel in " + filename);
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -123,7 +144,6 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
     }        
 
     public List <String> search (String [] line) throws RemoteException {
-
         synchronized (processed){
             
             Set<String> results = null; 
@@ -136,7 +156,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 } 
                 
                 if(results == null || results.isEmpty()){
-                    results = found;
+                    results = new HashSet<>(found);
                 }
 
                 else{
@@ -174,16 +194,19 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
             synchronized (wordCount) {
                 Set<String> stopWords = new HashSet<>();
+
                 for (String word: words){
                     wordCount.merge(word, 1, Integer::sum);
                 }
+
                 List<String> sortedWords = wordCount.entrySet()
                     .stream()
                     .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
                     .map(Map.Entry::getKey)
                     .toList(); 
 
-                sortedWords = sortedWords.subList(0, sortedWords.size());// a dividir por quartil)  
+                sortedWords = sortedWords.subList(0, sortedWords.size()/10000);// a dividir por quartil  
+
                 stopWords.addAll(sortedWords);
                 for (String word: words){
                     if (!stopWords.contains(word)){
@@ -200,11 +223,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             }
 
             synchronized (elements) {
-                for (String word: words){
-                    for (String element: elems){
-                        elements.computeIfAbsent (url, k -> new ArrayList<>()).add(element);
-                    }
-                }
+                elements.computeIfAbsent(url, k -> new ArrayList<>()).addAll(elems);
             }
         }
     }
@@ -213,7 +232,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         return reachable.get (url);
     }
 
-    public UnicastRemoteObject getUpdate () throws RemoteException{
+    public Barrel_int getUpdate () throws RemoteException{
         return this;
     }
 
