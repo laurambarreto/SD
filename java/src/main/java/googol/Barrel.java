@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializable {
     ConcurrentHashMap <String, Set <String>> processed;
     ConcurrentHashMap <String, Set <String>> reachable = new ConcurrentHashMap<>();
-    
+
     public Barrel () throws RemoteException {
         super ();
         processed = new ConcurrentHashMap<>();
@@ -76,7 +76,8 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             System.err.println("Barrel is now operational");
             
             InetAddress ip = InetAddress.getLocalHost();
-            String ipString = ip.getHostAddress();
+            String ipString = args[3];//ip.getHostAddress(); //bugged in windows 11
+            System.out.println(ipString);
             String ip_port = ipString + " " + args[0];
             
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
