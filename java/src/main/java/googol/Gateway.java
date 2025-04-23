@@ -8,7 +8,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.List;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
@@ -26,6 +25,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
             Gateway server = new Gateway ();
             Registry registry = LocateRegistry.createRegistry (Integer.parseInt(args[0]));
             registry.rebind ("googol", server);
+            System.out.println("Gateway ready on port " + args[0]);
 
         } catch (RemoteException e) {
             System.out.println ("Error creating server: " + e);
@@ -46,10 +46,18 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
     public void putUrl (Set<String> newUrl) throws java.rmi.RemoteException{
         try {
+            Set <String> queued = new HashSet<>(toBeProcessed);
             for (String url : newUrl){
+<<<<<<< HEAD
                 
                 toBeProcessed.put(url);
+=======
+                if (!queued.contains(url)){
+                    toBeProcessed.put(url);
+                }
+>>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
             }
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RemoteException ("Interrupted while waiting to put new URL", e);
@@ -70,9 +78,11 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
                 System.out.println("You're connected to a barrel!");
                 return results;
 
-            } catch (Exception e){
-                e.printStackTrace();
-
+            } catch (Exception e) {
+                System.err.println("Failed to connect to barrel at " + ip_port + ", removing from list...");
+                availableBarrels.remove(ip_port);
+                System.out.println();
+                System.out.println("Removed barrel from the list: " + ip_port);
             }
         }
         throw new RemoteException ("Waiting for a barrel to connect...");
@@ -81,8 +91,15 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
     public void addBarrel (String ip_port) throws RemoteException{
 
-        synchronized (availableBarrels){
-            availableBarrels.add(ip_port);
+        synchronized (availableBarrels) {
+            try {
+                String[] ipport = ip_port.split(" ");
+                Barrel_int barrel = (Barrel_int) LocateRegistry.getRegistry(ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
+                availableBarrels.add(ip_port); 
+                System.out.println("Added barrel: " + ip_port);
+            } catch (Exception e) {
+                System.err.println("Failed to connect to barrel at " + ip_port + ". It will not be added to the list.");
+            }
         }
     }
 
@@ -106,7 +123,10 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
                 return results;
 
             } catch (Exception e){
-                e.printStackTrace();
+                System.err.println("Failed to connect to barrel at " + ip_port + ", removing from list...");
+                availableBarrels.remove(ip_port);
+                System.out.println();
+                System.out.println("Removed barrel from the list: " + ip_port);
 
             }
         }
