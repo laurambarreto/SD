@@ -1,3 +1,3 @@
 cd target
-java -cp "./lib/jsoup-1.18.3.jar;." googol.Barrel 8001 127.0.0.1 8000
+java -Djava.rmi.server.hostname=192.168.0.174 -cp "./lib/jsoup-1.18.3.jar;." googol.Barrel 8002 192.168.0.174 8000 192.168.0.174
 cd ..
