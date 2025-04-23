@@ -48,14 +48,10 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         try {
             Set <String> queued = new HashSet<>(toBeProcessed);
             for (String url : newUrl){
-<<<<<<< HEAD
-                
-                toBeProcessed.put(url);
-=======
                 if (!queued.contains(url)){
                     toBeProcessed.put(url);
                 }
->>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
+
             }
 
         } catch (InterruptedException e) {

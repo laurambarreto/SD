@@ -65,11 +65,7 @@ public class Client{
         System.out.println ("4 - Exit");
     }
 
-<<<<<<< HEAD
-    public static int verifyInput (String input){
-=======
     public static int verifyInput (BufferedReader reader) throws IOException {
->>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
         int num = 0;
         boolean valid = false;
 
@@ -126,25 +122,6 @@ public class Client{
                         System.out.println(url);
                     }
                     System.out.println();
-<<<<<<< HEAD
-                    String answer;
-                    while (true) {
-                        System.out.print("Continue to search? (y/n): ");
-                        answer = reader.readLine();
-                        System.out.println();
-
-                        if (answer.equalsIgnoreCase("n")) {
-                            stop = true;
-                            System.out.println("Going back to the main menu...");
-                            break;
-                        } else if (answer.equalsIgnoreCase("y")) {
-                            break;
-                        } else {
-                            System.out.println("Invalid input, please enter 'y' or 'n'!");
-                        }
-                    }
-=======
->>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
                 }
 
                 stop = !confirmContinue(reader, "Continue searching? (y/n): ");
