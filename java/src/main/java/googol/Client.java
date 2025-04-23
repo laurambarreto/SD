@@ -66,7 +66,6 @@ public class Client{
     }
 
     public static int verifyInput (String input){
-        boolean invalid = true;
         int num = 0;
         boolean valid = false;
 
@@ -157,7 +156,7 @@ public class Client{
                     System.out.println();
                     String answer;
                     while (true) {
-                        System.out.print("Continue? (y/n): ");
+                        System.out.print("Continue to search? (y/n): ");
                         answer = reader.readLine();
                         System.out.println();
 

@@ -210,7 +210,6 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                     .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
                     .map(Map.Entry::getKey)
                     .toList(); 
-
                 sortedWords = sortedWords.subList(0, sortedWords.size()/10000);// a dividir por quartil  
 
                 stopWords.addAll(sortedWords);

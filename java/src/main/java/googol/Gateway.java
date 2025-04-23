@@ -47,6 +47,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     public void putUrl (Set<String> newUrl) throws java.rmi.RemoteException{
         try {
             for (String url : newUrl){
+                
                 toBeProcessed.put(url);
             }
         } catch (InterruptedException e) {
