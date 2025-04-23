@@ -2,6 +2,7 @@ package googol;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -12,6 +13,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -21,11 +23,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializable {
     ConcurrentHashMap <String, Set <String>> processed;
+<<<<<<< HEAD
     ConcurrentHashMap <String, Set <String>> reachable = new ConcurrentHashMap<>();
 
+=======
+    ConcurrentHashMap <String, Set <String>> reachable;
+    ConcurrentHashMap <String, ArrayList <String>> elements; 
+    ConcurrentHashMap <String, Integer> wordCount; // Para contar a quantas vezes cada palavra aparece
+    
+>>>>>>> 0a6ae6034af4fd28aba67bfeb5dce13c00fd1742
     public Barrel () throws RemoteException {
         super ();
         processed = new ConcurrentHashMap<>();
+        reachable = new ConcurrentHashMap<>();
+        elements = new ConcurrentHashMap<>();
+        wordCount = new ConcurrentHashMap<>();
+
     }
 
     public static void main(String[] args) {
@@ -46,6 +59,9 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                         Barrel temp = (Barrel) barrel.getUpdate();
                         server.processed = temp.processed;
                         server.reachable = temp.reachable;
+                        server.elements = temp.elements;
+                        server.wordCount = temp.wordCount;
+                        System.out.println ("Barrel updated...");
                         update = true;
                         break;
 
@@ -59,14 +75,35 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             }
 
             if(update == false){
-                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("../resources/barrel1.obj"))) {
-                    System.err.println("Looking for backup");
-                    Barrel object = (Barrel)ois.readObject(); // Read the object from the binary file
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("resources/barrel1.obj"))) {
+                    System.out.println("Looking for backup...");
+                    Barrel object = (Barrel) ois.readObject();
                     server.processed = object.processed;
                     server.reachable = object.reachable;
+                    server.elements = object.elements;
+                    server.wordCount = object.wordCount;
+                    System.out.println("Backup loaded successfully.");
+
+                    for (String key : server.processed.keySet()) {
+                        System.out.println("Key: " + key);
+                        System.out.println("Value: " + server.processed.get(key));
+                    }
+
+                    for (String key : server.reachable.keySet()) {
+                        System.out.println("Key: " + key);
+                        System.out.println("Value: " + server.reachable.get(key));
+                    }
                 
-                }catch (Exception e) {
-                    System.err.println("No backup found");
+                } catch (FileNotFoundException e) {
+                    System.err.println("Backup file not found.");
+
+                } catch (IOException e) {
+                    System.err.println("Error reading the backup file.");
+                    e.printStackTrace();
+
+                } catch (ClassNotFoundException e) {
+                    System.err.println("Backup file format is incorrect.");
+                    e.printStackTrace();
                 }
             }
 
@@ -87,12 +124,15 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 String filename = "resources/barrel1.obj";
                 File file = new File(filename);
                 File parentDir = file.getParentFile();
+
                 if (parentDir != null && !parentDir.exists()) {
-                    parentDir.mkdirs();  // Create the directory structure
+                    parentDir.mkdirs();  // Criar o diretório pai se não existir
                 }
+
                 try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
                     out.writeObject(server);
                     System.out.println("Saving barrel in " + filename);
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -111,6 +151,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
     public List <String> search (String [] line) throws RemoteException {
         synchronized (processed){
+            
             Set<String> results = null; 
             Set<String> found;
             for (String word : line){
@@ -121,7 +162,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 } 
                 
                 if(results == null || results.isEmpty()){
-                    results = found;
+                    results = new HashSet<>(found);
                 }
 
                 else{
@@ -144,7 +185,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 List<String> sortedUrls = filtered.entrySet()
                     .stream()
                     .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
-                    .map(Map.Entry::getKey) // Only obtains URLS
+                    .map(Map.Entry::getKey) // apenas obtém os URLs
                     .toList();
 
                 return sortedUrls;
@@ -153,29 +194,51 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         }
     }
 
-    public void addToIndex (Set<String> words, Set<String> links, String url) throws RemoteException {
-        boolean stopWord = false;
+    public void addToIndex (ArrayList<String> words, Set<String> links, ArrayList <String> elems, String url) throws RemoteException {
+        
         synchronized (processed) {
-            for (String word: words){
-                processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
-                //if (processed.get (word).size () > xnum) {
-                    //stopWord = true;
-                    //blocks the stop word 
-                //} we tried to implement the stop words but we didn't have time
+
+            synchronized (wordCount) {
+                Set<String> stopWords = new HashSet<>();
+
+                for (String word: words){
+                    wordCount.merge(word, 1, Integer::sum);
+                }
+
+                List<String> sortedWords = wordCount.entrySet()
+                    .stream()
+                    .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
+                    .map(Map.Entry::getKey)
+                    .toList(); 
+
+                sortedWords = sortedWords.subList(0, sortedWords.size()/10000);// a dividir por quartil  
+
+                stopWords.addAll(sortedWords);
+                for (String word: words){
+                    if (!stopWords.contains(word)){
+                        processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
+                    
+                    }
+                }
+            }
+
+            synchronized (reachable) {
+                for (String link: links){
+                    reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
+                }
+            }
+
+            synchronized (elements) {
+                elements.computeIfAbsent(url, k -> new ArrayList<>()).addAll(elems);
             }
         }
-
-        for (String link: links){
-            reachable.computeIfAbsent(link, k -> new HashSet<>()).add(url);
-        }
-        
     }
-
-    public Set <String> getReachableUrls (String url){
+    
+    public Set <String> getReachableUrls (String url) throws RemoteException {
         return reachable.get (url);
     }
 
-    public UnicastRemoteObject getUpdate () throws RemoteException{
+    public Barrel_int getUpdate () throws RemoteException{
         return this;
     }
 

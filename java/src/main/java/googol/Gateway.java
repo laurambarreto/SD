@@ -35,7 +35,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
     public String takeNext () throws RemoteException {
         String toProcess;
         try {
-            toProcess = toBeProcessed.take (); // if the queue is empty, blocks
+            toProcess = toBeProcessed.take (); // se a fila estiver vazia, espera até que um elemento esteja disponível
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -44,7 +44,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         return toProcess;
     }
 
-    public void indexUrl (Set<String> newUrl) throws java.rmi.RemoteException{
+    public void putUrl (Set<String> newUrl) throws java.rmi.RemoteException{
         try {
             for (String url : newUrl){
                 toBeProcessed.put(url);
