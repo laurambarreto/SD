@@ -19,7 +19,7 @@ public class Client{
         System.out.println("Server ready. Waiting for input...");
         try {
             Set <String> urls = new HashSet<>();
-            urls.add ("https://pt.wikipedia.org/wiki/");
+            urls.add ("https://pt.wikipedia.org/wiki/Wikip%C3%A9dia:P%C3%A1gina_principal");
             gateway.putUrl(urls);
 
         } catch (Exception e) {
@@ -31,7 +31,7 @@ public class Client{
 
         while (running) {
             menu();
-            num = verifyInput(reader.readLine());
+            num = verifyInput(reader);
             System.out.println ();
 
             switch (num) {
@@ -65,13 +65,12 @@ public class Client{
         System.out.println ("4 - Exit");
     }
 
-    public static int verifyInput (String input){
-        boolean invalid = true;
+    public static int verifyInput (BufferedReader reader) throws IOException {
         int num = 0;
         boolean valid = false;
 
         while (!valid) {
-            
+            String input = reader.readLine();
             try {
                 num = Integer.parseInt(input);
                 if (num >= 1 && num <= 4) {
@@ -79,10 +78,10 @@ public class Client{
                 } else {
                     System.out.println("Invalid input. Please enter a number between 1 and 4.");
                 }
-
             } catch (NumberFormatException e) {
                 System.out.println("Invalid input. Please enter a valid number.");
             }
+
             
         }
 
@@ -108,44 +107,12 @@ public class Client{
                     System.out.println();
                     System.out.println("No results found");
                     System.out.println();
-                    String answer;
-                    while (true) {
-                        System.out.print("Continue to search? (y/n): ");
-                        answer = reader.readLine();
-                        System.out.println();
-
-                        if (answer.equalsIgnoreCase("n")) {
-                            stop = true;
-                            System.out.println("Going back to the main menu...");
-                            break;
-                        } else if (answer.equalsIgnoreCase("y")) {
-                            break;
-                        } else {
-                            System.out.println("Invalid input, please enter 'y' or 'n'!");
-                        }
-                    }
                 } 
                 
                 else if (results.size() == 1) {
                     System.out.println();
                     System.out.println("Results found for " + String.join(" ", line) + ": " + results.get(0));
                     System.out.println();
-                    String answer;
-                    while (true) {
-                        System.out.print("Continue to search? (y/n): ");
-                        answer = reader.readLine();
-                        System.out.println();
-
-                        if (answer.equalsIgnoreCase("n")) {
-                            stop = true;
-                            System.out.println("Going back to the main menu...");
-                            break;
-                        } else if (answer.equalsIgnoreCase("y")) {
-                            break;
-                        } else {
-                            System.out.println("Invalid input, please enter 'y' or 'n'!");
-                        }
-                    }
                 }
 
                 else {
@@ -155,23 +122,9 @@ public class Client{
                         System.out.println(url);
                     }
                     System.out.println();
-                    String answer;
-                    while (true) {
-                        System.out.print("Continue? (y/n): ");
-                        answer = reader.readLine();
-                        System.out.println();
-
-                        if (answer.equalsIgnoreCase("n")) {
-                            stop = true;
-                            System.out.println("Going back to the main menu...");
-                            break;
-                        } else if (answer.equalsIgnoreCase("y")) {
-                            break;
-                        } else {
-                            System.out.println("Invalid input, please enter 'y' or 'n'!");
-                        }
-                    }
                 }
+
+                stop = !confirmContinue(reader, "Continue searching? (y/n): ");
             }
                 
         } catch (Exception e) {
@@ -193,22 +146,8 @@ public class Client{
                 System.out.println ("Url inserted successfully...");
                 System.out.println();
 
-                String answer;
-                    while (true) {
-                        System.out.print("Continue? (y/n): ");
-                        answer = reader.readLine();
-                        System.out.println();
-
-                        if (answer.equalsIgnoreCase("n")) {
-                            stop = true;
-                            System.out.println("Going back to the main menu...");
-                            break;
-                        } else if (answer.equalsIgnoreCase("y")) {
-                            break;
-                        } else {
-                            System.out.println("Invalid input, please enter 'y' or 'n'!");
-                        }
-                    }
+                stop = !confirmContinue(reader, "Continue? (y/n): ");
+                    
 
             }
 
@@ -222,9 +161,9 @@ public class Client{
         try {
             while (!stop){
                 System.out.print("Insert Url: ");
-                String url2 = reader.readLine();
-
-                if (gateway.getReachableUrls(url2) == null || gateway.getReachableUrls(url2).isEmpty()){
+                String url = reader.readLine();
+                Set <String> reachable = gateway.getReachableUrls(url);
+                if (reachable == null || reachable.isEmpty()){
                     System.out.println();
                     System.out.println ("The url is not available in any page...");
                 }
@@ -234,31 +173,35 @@ public class Client{
                     System.out.println("The inserted url is available in: ");
                     System.out.println();
         
-                    for (String url : gateway.getReachableUrls(url2)) {
-                        System.out.println(url);
+                    for (String url2 : reachable) {
+                        System.out.println(url2);
                     }
                     System.out.println();
                 }
     
-                System.out.print("Want to continue? (y/n): ");
-                String answer = reader.readLine();
-                System.out.println ();
-
-                if (answer.equals("n")) {
-                    stop = true;
-                    System.out.println ("Going back to the main menu...");
-                } else if (answer.equals("y")) {
-                    stop = false;
-                    continue;
-                } else {
-                    System.out.println("Invalid input, please enter 'y' or 'n'!");
-                    continue;
-                }
+                stop = !confirmContinue(reader, "Want to continue? (y/n): ");
 
             }
             
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static boolean confirmContinue(BufferedReader reader, String message) throws IOException {
+        while (true) {
+            System.out.print(message);
+            String answer = reader.readLine().trim().toLowerCase();
+            System.out.println();
+
+            if (answer.equals("y")) {
+                return true;
+            }
+            if (answer.equals("n")) {
+                return false;
+            }
+
+            System.out.println("Invalid input, please enter 'y' or 'n'!");
         }
     }
 }
