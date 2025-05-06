@@ -65,11 +65,8 @@ public class Client{
         System.out.println ("4 - Exit");
     }
 
-<<<<<<< HEAD
-    public static int verifyInput (String input){
-=======
     public static int verifyInput (BufferedReader reader) throws IOException {
->>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
+
         int num = 0;
         boolean valid = false;
 
