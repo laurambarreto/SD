@@ -26,7 +26,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
     ConcurrentHashMap <String, Set <String>> reachable;
     ConcurrentHashMap <String, ArrayList <String>> elements; 
     ConcurrentHashMap <String, Integer> wordCount; // Para contar a quantas vezes cada palavra aparece
-    static Set <String> stopWords; 
+    Set<String> stopWords; 
 
     public Barrel () throws RemoteException {
         super ();
@@ -58,6 +58,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                         barrel1.reachable = barrel2.reachable;
                         barrel1.elements = barrel2.elements;
                         barrel1.wordCount = barrel2.wordCount;
+                        barrel1.stopWords = barrel2.stopWords;
                         System.out.println ("Barrel updated...");
                         update = true;
                         break;
@@ -79,6 +80,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                     barrel1.reachable = object.reachable;
                     barrel1.elements = object.elements;
                     barrel1.wordCount = object.wordCount;
+                    barrel1.stopWords = object.stopWords;
                     System.out.println("Backup loaded successfully.");
                 
                 } catch (FileNotFoundException e) {
@@ -107,15 +109,6 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
                 System.out.println("Shutdown hook triggered. Saving Data, might take some time...");
-                try {
-                    for (String word: stopWords){
-                        System.out.println (word);
-
-                    }
-                                    
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
                 
                 String filename = "resources/info.obj";
                 File file = new File(filename);
@@ -151,6 +144,10 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             Set<String> results = null; 
             Set<String> found;
             for (String word : line){
+                if (stopWords.contains(word)){
+                    continue;
+                }
+
                 found = processed.get(word);
 
                 if(found == null || found.isEmpty()){
@@ -161,7 +158,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                     results = new HashSet<>(found);
                 }
 
-                else{
+                else {
                     results.retainAll(found);
                 }
 
@@ -193,29 +190,42 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         synchronized (processed) {
             synchronized (wordCount) {
 
-                List<Integer> frequencies = wordCount.values()
-                .stream()
-                .sorted()
-                .toList();
-
                 if (wordCount != null || !wordCount.isEmpty()){
-                    int size = frequencies.size();
-                    int q1 = frequencies.get(size / 4);
-                    int q3 = frequencies.get(3 * size / 4);
-                    int iqr = q3 - q1;
-                    int upperBound = q3 + (int) Math.round(2.0 * iqr);
+                    List<Integer> frequencies = wordCount.values()
+                    .stream()
+                    .sorted()
+                    .toList();
 
-                    for (String word: words){
-                        wordCount.merge(word, 1, Integer::sum);
-                        if (wordCount.get(word) <= upperBound) {
-                            processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
-                            if (stopWords.contains (word)){
-                                stopWords.remove(word);
+                    int size = frequencies.size();
+
+                    if (size >= 4) {
+                        int q95 = frequencies.get(95 * size / 100);
+                    
+                        for (String word : words) {
+                            wordCount.merge(word, 1, Integer::sum);
+                        
+                            // Verifica se o número de ocorrências está dentro do limite aceitável
+                            if (wordCount.get(word) <= q95) {
+                                processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+                        
+                                // Remover a palavra das stop words caso ela tenha sido adicionada antes
+                                if (stopWords.contains(word)) {
+                                    stopWords.remove(word);  // Remove a palavra das stop words
+                                    System.out.println("Removing Stop word: " + word);
+                                }
+                            } else {
+                                // Caso contrário, adicionar à stop words
+                                if (!stopWords.contains(word)) {
+                                    stopWords.add(word);  // Só adiciona se não estiver já na lista
+                                    System.out.println("Adding Stop word: " + word);
+                                }
                             }
                         }
-
-                        else {
-                            stopWords.add (word);
+                    } else {
+                        // Se ainda não há dados suficientes, adiciona normalmente
+                        for (String word : words) {
+                            wordCount.put(word, 1);
+                            processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
                         }
                     }
                 }
