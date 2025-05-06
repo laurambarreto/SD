@@ -209,13 +209,13 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 if (wordCount != null || !wordCount.isEmpty()){
                     int size = frequencies.size();
                     int q1 = frequencies.get(size / 4);
-                    int q3 = frequencies.get(3 * size / 4);
-                    int iqr = q3 - q1;
-                    int upperBound = q3 + (int) Math.round(2.0 * iqr);
+                    int q95 = frequencies.get(95 * size / 100);
+                    int iqr = q95 - q1;
+                    //int upperBound = q95 + (int) Math.round(2.0 * iqr);
 
                     stopWords = wordCount.entrySet()
                     .stream()
-                    .filter(e -> e.getValue() > upperBound)
+                    .filter(e -> e.getValue() > q95)
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
                 }
