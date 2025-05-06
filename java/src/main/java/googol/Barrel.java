@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializable {
     ConcurrentHashMap <String, Set <String>> processed;
@@ -194,30 +193,31 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         synchronized (processed) {
             synchronized (wordCount) {
 
-                for (String word: words){
-                    wordCount.merge(word, 1, Integer::sum);
-                    if (!stopWords.contains(word)) {
-                        processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
-                    }
-                }
-
                 List<Integer> frequencies = wordCount.values()
                 .stream()
                 .sorted()
                 .toList();
-                
+
                 if (wordCount != null || !wordCount.isEmpty()){
                     int size = frequencies.size();
                     int q1 = frequencies.get(size / 4);
-                    int q95 = frequencies.get(95 * size / 100);
-                    int iqr = q95 - q1;
-                    //int upperBound = q95 + (int) Math.round(2.0 * iqr);
+                    int q3 = frequencies.get(3 * size / 4);
+                    int iqr = q3 - q1;
+                    int upperBound = q3 + (int) Math.round(2.0 * iqr);
 
-                    stopWords = wordCount.entrySet()
-                    .stream()
-                    .filter(e -> e.getValue() > q95)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toSet());
+                    for (String word: words){
+                        wordCount.merge(word, 1, Integer::sum);
+                        if (wordCount.get(word) <= upperBound) {
+                            processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+                            if (stopWords.contains (word)){
+                                stopWords.remove(word);
+                            }
+                        }
+
+                        else {
+                            stopWords.add (word);
+                        }
+                    }
                 }
 
             synchronized (reachable) {
