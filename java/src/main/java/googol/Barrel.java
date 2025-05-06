@@ -196,25 +196,8 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
                 for (String word: words){
                     wordCount.merge(word, 1, Integer::sum);
-<<<<<<< HEAD
-                }
-
-                List<String> sortedWords = wordCount.entrySet()
-                    .stream()
-                    .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
-                    .map(Map.Entry::getKey)
-                    .toList(); 
-                sortedWords = sortedWords.subList(0, sortedWords.size()/10000);// a dividir por quartil  
-
-                stopWords.addAll(sortedWords);
-                for (String word: words){
-                    if (!stopWords.contains(word)){
-                        processed.computeIfAbsent(word, k -> new HashSet<>()).add (url);
-                    
-=======
                     if (!stopWords.contains(word)) {
                         processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
->>>>>>> 6f50c27ffd4c692c1f06b87de9d6e6c694f6d145
                     }
                 }
 
@@ -226,13 +209,13 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 if (wordCount != null || !wordCount.isEmpty()){
                     int size = frequencies.size();
                     int q1 = frequencies.get(size / 4);
-                    int q3 = frequencies.get(3 * size / 4);
-                    int iqr = q3 - q1;
-                    int upperBound = q3 + (int) Math.round(2.0 * iqr);
+                    int q95 = frequencies.get(95 * size / 100);
+                    int iqr = q95 - q1;
+                    //int upperBound = q95 + (int) Math.round(2.0 * iqr);
 
                     stopWords = wordCount.entrySet()
                     .stream()
-                    .filter(e -> e.getValue() > upperBound)
+                    .filter(e -> e.getValue() > q95)
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
                 }
