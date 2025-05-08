@@ -31,3 +31,9 @@ Nota: Com algumas dificuldades conseguimos pôr o servidor num computador em con
 
 Funcionalidade inacabada:
     6. Aprendizagem computacional distribuída de "stop words" (começamos a implementar mas ficou comentado no código)
+
+1. Arquitetura do software 
+2. Detalhes sobre a integração do Spring Boot / FastAPI com o Servidor RPC/RMI da primeira meta
+3. Detalhes sobre a programação de WebSockets e a sua integração com o servidor RPC/RMI
+4. Detalhes sobre a integração com os serviços REST
+5. Descrição dos testes feitos à plataforma (pass/fail)

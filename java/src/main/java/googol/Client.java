@@ -19,7 +19,9 @@ public class Client{
         System.out.println("Server ready. Waiting for input...");
         try {
             Set <String> urls = new HashSet<>();
-            urls.add ("https://pt.wikipedia.org/wiki/Wikip%C3%A9dia:P%C3%A1gina_principal");
+            urls.add ("https://www.infopedia.pt/dicionarios/ingles-portugues/English");
+            urls.add ("https://pt.wikipedia.org/wiki/Wikipedia:Página_principal");
+            urls.add ("https://en.wikipedia.org/wiki/Main_Page");
             gateway.putUrl(urls);
 
         } catch (Exception e) {
