@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -20,29 +19,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializable {
-    ConcurrentHashMap <String, Set <String>> processed;
-    ConcurrentHashMap <String, Set <String>> reachable;
-    ConcurrentHashMap <String, ArrayList <String>> elements; 
-    ConcurrentHashMap <String, Integer> wordCount; // Para contar a quantas vezes cada palavra aparece
-    Set<String> stopWords; 
+    ConcurrentHashMap <String, Set <String>> processed; // palavras já processadas e os links que as contêm
+    ConcurrentHashMap <String, Set <String>> reachable; // links alcançados a partir de um determinado url
+    ConcurrentHashMap <String, ArrayList <String>> elements; // elementos de cada página
+    ConcurrentHashMap <String, Integer> globalWordCount; // Para contar a quantas vezes cada palavra aparece
+    Set<String> stopWords; // palavras consideradas stop words (sem repetição)
 
     public Barrel () throws RemoteException {
         super ();
         processed = new ConcurrentHashMap<>();
         reachable = new ConcurrentHashMap<>();
         elements = new ConcurrentHashMap<>();
+        globalWordCount = new ConcurrentHashMap<>();
         stopWords = new HashSet<>();
-        wordCount = new ConcurrentHashMap<>();
 
     }
 
     public static void main(String[] args) {
-        Boolean update = false;
+        Boolean update = false; // verificar se houve update
         try {
-            Barrel barrel1 = new Barrel();
-            Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[1], Integer.parseInt(args[2])).lookup("googol");
+            Barrel barrel1 = new Barrel(); 
+            Gateway_int gateway = (Gateway_int) LocateRegistry.getRegistry(args[3], Integer.parseInt(args[2])).lookup("googol");
             Barrel_int barrel;
             
             try {  
@@ -51,19 +51,20 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                 for (String ip_port: availableBarrels){
                     String [] ipport = ip_port.split (" ");
                     
-                    try{
+                    try {
                         barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
-                        Barrel barrel2 = (Barrel) barrel.getUpdate();
-                        barrel1.processed = barrel2.processed;
-                        barrel1.reachable = barrel2.reachable;
-                        barrel1.elements = barrel2.elements;
-                        barrel1.wordCount = barrel2.wordCount;
-                        barrel1.stopWords = barrel2.stopWords;
+                        ArrayList<Object> barrel2 = barrel.getUpdate();
+                        barrel1.processed = (ConcurrentHashMap<String,Set<String>>)barrel2.get(0);
+                        barrel1.reachable = (ConcurrentHashMap<String,Set<String>>)barrel2.get(1);
+                        barrel1.elements = (ConcurrentHashMap<String,ArrayList<String>>)barrel2.get(2);
+                        barrel1.globalWordCount = (ConcurrentHashMap<String,Integer>)barrel2.get(3);
+                        barrel1.stopWords = (Set<String>)barrel2.get(4);
                         System.out.println ("Barrel updated...");
                         update = true;
                         break;
 
                     } catch (Exception e){
+                        e.printStackTrace();
                         System.err.println("Failed to update from barrel at " + ip_port);
 
                     }
@@ -79,7 +80,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
                     barrel1.processed = object.processed;
                     barrel1.reachable = object.reachable;
                     barrel1.elements = object.elements;
-                    barrel1.wordCount = object.wordCount;
+                    barrel1.globalWordCount = object.globalWordCount;
                     barrel1.stopWords = object.stopWords;
                     System.out.println("Backup loaded successfully.");
                 
@@ -101,8 +102,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
             System.out.println("Barrel is now operational");
             
-            InetAddress ip = InetAddress.getLocalHost();
-            String ipString = ip.getHostAddress();
+            String ipString = args [1];
             String ip_port = ipString + " " + args[0];
             gateway.addBarrel(ip_port);
             
@@ -140,92 +140,110 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
 
     public List <String> search (String [] line) throws RemoteException {
         synchronized (processed){
+            synchronized (stopWords){
+                Set<String> results = null; 
+                Set<String> found;
+                for (String word : line){
+                    if (stopWords.contains(word)){
+                        continue;
+                    }
 
-            Set<String> results = null; 
-            Set<String> found;
-            for (String word : line){
-                if (stopWords.contains(word)){
-                    continue;
+                    found = processed.get(word);
+
+                    if(found == null || found.isEmpty()){
+                        return Collections.emptyList();
+                    } 
+                    
+                    if(results == null){
+                        results = new HashSet<>(found);
+                    }
+
+                    else {
+                        results.retainAll(found);
+                    }
+
                 }
-
-                found = processed.get(word);
-
-                if(found == null || found.isEmpty()){
+                
+                if (results == null || results.isEmpty()) {
                     return Collections.emptyList();
-                } 
-                
-                if(results == null){
-                    results = new HashSet<>(found);
+                    
                 }
 
-                else {
-                    results.retainAll(found);
+                ConcurrentHashMap <String,Integer> filtered = new ConcurrentHashMap<>();
+
+                for (String result: results){
+                    Integer num = reachable.get(result).size();
+                    filtered.put (result,num);
                 }
-
-            }
-            
-            if (results == null || results.isEmpty()) {
-                return Collections.emptyList();
                 
-            }
+                List<String> sortedUrls = filtered.entrySet()
+                    .stream()
+                    .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
+                    .map(Map.Entry::getKey) // apenas obtém os URLs
+                    .toList();
 
-            ConcurrentHashMap <String,Integer> filtered = new ConcurrentHashMap<>();
-
-            for (String result: results){
-                Integer num = reachable.get(result).size();
-                filtered.put (result,num);
-            }
-            
-            List<String> sortedUrls = filtered.entrySet()
-                .stream()
-                .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue())) 
-                .map(Map.Entry::getKey) // apenas obtém os URLs
-                .toList();
-
-            return sortedUrls;
+                return sortedUrls;
+            }    
         }
     }
 
-    public void addToIndex (ArrayList<String> words, Set<String> links, ArrayList <String> pageElems, String url) throws RemoteException {
+    public void addToIndex (ConcurrentHashMap <String, Integer> wordCount, Set<String> links, ArrayList <String> pageElems, String url) throws RemoteException {
         synchronized (processed) {
-            synchronized (wordCount) {
-
-                if (wordCount != null || !wordCount.isEmpty()){
-                    List<Integer> frequencies = wordCount.values()
-                    .stream()
-                    .sorted()
-                    .toList();
-
-                    int size = frequencies.size();
-
-                    if (size >= 4) {
-                        int q95 = frequencies.get(95 * size / 100);
-                    
-                        for (String word : words) {
-                            wordCount.merge(word, 1, Integer::sum);
-                        
-                            // Verifica se o número de ocorrências está dentro do limite aceitável
-                            if (wordCount.get(word) <= q95) {
-                                processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
-                        
-                                // Remover a palavra das stop words caso ela tenha sido adicionada antes
-                                if (stopWords.contains(word)) {
-                                    stopWords.remove(word);  // Remove a palavra das stop words
-                                    System.out.println("Removing Stop word: " + word);
-                                }
+            synchronized (globalWordCount) {
+                synchronized (wordCount) {
+                    if (wordCount != null || !wordCount.isEmpty()){
+                        for (String word : wordCount.keySet()) {
+                            if (globalWordCount.containsKey(word)) {
+                                globalWordCount.put(word, globalWordCount.get(word) + wordCount.get(word));
                             } else {
-                                // Caso contrário, adicionar à stop words
-                                if (!stopWords.contains(word)) {
-                                    stopWords.add(word);  // Só adiciona se não estiver já na lista
-                                    System.out.println("Adding Stop word: " + word);
-                                }
+                                globalWordCount.put(word, wordCount.get(word));
                             }
                         }
-                    } else {
-                        // Se ainda não há dados suficientes, adiciona normalmente
-                        for (String word : words) {
-                            wordCount.put(word, 1);
-                            processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+                    }
+
+                    if (globalWordCount != null || !globalWordCount.isEmpty()){
+                        List<Double> count = globalWordCount.values()
+                            .stream()
+                            .sorted()
+                            .map(val -> val * 1.0) // transforma em Double
+                            .collect(Collectors.toCollection(ArrayList::new));
+
+                        double max = count.get(count.size() - 1);
+                        double total = count.stream().mapToDouble(Double::doubleValue).sum();
+
+                        for (int i = 0; i < count.size(); i++) {
+                            count.set(i, count.get(i));
+                        }
+
+                        if (max >= 1000) {
+                            double q1 = count.get (count.size() / 4);
+                            double q3 = count.get (3 * count.size() / 4);
+                            double iqr = q3 - q1;
+                            double upperBound = q3 + 1.5 * iqr;
+                            System.out.println("Upper Bound: " + upperBound);
+                        
+                            for (String word : globalWordCount.keySet()) {
+                                double freq = globalWordCount.get(word);
+    
+                                if (freq <= upperBound) {
+                                    processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+                                    if (stopWords.contains(word)) {
+                                        stopWords.remove(word);
+                                        System.out.println("Removing Stop word: " + word);
+                                    }
+                                } else {
+                                    if (!stopWords.contains(word)) {
+                                        stopWords.add(word);
+                                        System.out.println("Adding Stop word: " + word);
+                                    }
+                                }
+                            }
+                            
+                        } else {
+                            // Se ainda não há dados suficientes, adiciona normalmente
+                            for (String word : globalWordCount.keySet()) {
+                                processed.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+                            }
                         }
                     }
                 }
@@ -247,8 +265,14 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
         return reachable.get (url);
     }
 
-    public Barrel_int getUpdate () throws RemoteException{
-        return this;
+    public ArrayList <Object> getUpdate () throws RemoteException{
+        ArrayList <Object> update = new ArrayList<>();
+        update.add(processed);
+        update.add(reachable);
+        update.add(elements);
+        update.add(globalWordCount);
+        update.add(stopWords);
+        return update;
     }
 
 }
