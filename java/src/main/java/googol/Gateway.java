@@ -139,16 +139,4 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
 
     }
 
-    public void indexHackerNewsMatches(String[] searchTerms) throws RemoteException {
-        HackerNewsFetcher fetcher = new HackerNewsFetcher();
-        List<String> stories = fetcher.fetchMatchingStories(searchTerms);
-    
-        if (stories.isEmpty()) {
-            System.out.println("Nenhuma notícia encontrada com os termos fornecidos.");
-            return;
-        }
-        putUrl(stories.stream().collect(Collectors.toSet()));
-    }
-    
-
 }
