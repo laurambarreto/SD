@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -57,20 +58,24 @@ public class Downloader {
             String quote = doc.body().text().substring (0,50);            
             pageElems.add (quote); 
 
-            StringTokenizer st = new StringTokenizer(doc.body().text());
+            StringTokenizer st = new StringTokenizer(doc.body().text(), " \t\n\r\f.,;:!?()[]{}<>\"'`~@#$%^&*-+=|\\/„“”’‘…—–_•°·");
             ArrayList<String> words = new ArrayList<>(); // adicionar todas as palavras encontradas a um Array 
-            
+            ConcurrentHashMap <String, Integer> wordCount = new ConcurrentHashMap <String, Integer>();
             while (st.hasMoreTokens()){ 
                 String word = st.nextToken();
                 words.add (word);
-                
+                if (wordCount.containsKey(word)){
+                    wordCount.put(word, wordCount.get(word) + 1); // se a palavra já existe, incrementar o contador
+                } else {
+                    wordCount.put(word, 1); // se não existe, adicionar com contador 1
+                }
             }
 
             Set <String> links = new HashSet<>();
 
             // Adicionar os links encontrados à lista de links
             for (Element link: elements){
-                String href = link.attr("abs:href");; 
+                String href = link.attr("abs:href");
 
                 if (!href.isEmpty() && !links.contains(href)){
                     links.add (href); // para cada link encontrado, adicionar ao Set dos Links
@@ -93,7 +98,7 @@ public class Downloader {
                 // Conectar aos barrels e adicionar os dados processados
                 try{
                     barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
-                    barrel.addToIndex(words, links, pageElems, url);
+                    barrel.addToIndex(wordCount, links, pageElems, url);
                     gateway.putUrl(links);
 
                 } catch (Exception e){

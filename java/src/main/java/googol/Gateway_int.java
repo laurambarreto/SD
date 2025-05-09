@@ -11,6 +11,6 @@ public interface Gateway_int extends Remote {
     public void addBarrel (String ip_port) throws RemoteException;
     public Set<String> getAvailableBarrels () throws RemoteException;
     public Set <String> getReachableUrls (String url) throws RemoteException;
-    
+    public void indexHackerNewsUrls (String[]searchTerms) throws RemoteException;
     
 }

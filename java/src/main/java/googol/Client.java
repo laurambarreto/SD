@@ -39,6 +39,8 @@ public class Client{
             switch (num) {
                 case 1:
                     search(gateway, reader);
+                    //if (client quer indexar hacker news)
+                    //    gateway.indexHackerNewsMatches(searchTerms);
                     break;
 
                 case 2:

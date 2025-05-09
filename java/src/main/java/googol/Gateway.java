@@ -1,5 +1,6 @@
 package googol;
 
+import googol.HackerNewsService.*; 
 import java.rmi.*;
 import java.rmi.server.*;
 import java.rmi.registry.*;
@@ -8,6 +9,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
+import jdk.jfr.MemoryAddress;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
@@ -65,13 +68,21 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         Barrel_int barrel;
         if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
 
-        for (String ip_port: availableBarrels){
+        int attempts = availableBarrels.size();  // com dois barrels, será no máximo 2 tentativas
+
+        while (attempts-- > 0) {
+            String ip_port = availableBarrels.poll(); // tira o primeiroString ip_port = availableBarrels.poll(); // tira o primeiro
             String [] ipport = ip_port.split (" ");
+
+            availableBarrels.remove(ip_port); // remove o barrel que não está a responder
+            availableBarrels.add(ipport[0] + " " + ipport[1]); // adiciona o barrel que está a responder
             
             try{
                 barrel = (Barrel_int)LocateRegistry.getRegistry (ipport[0], Integer.parseInt(ipport[1])).lookup("barrel");
                 List <String> results = barrel.search (line);
                 System.out.println("You're connected to a barrel!");
+                
+                availableBarrels.offer(ip_port); // se funcionar, mete no fim
                 return results;
 
             } catch (Exception e) {
@@ -80,11 +91,23 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
                 System.out.println();
                 System.out.println("Removed barrel from the list: " + ip_port);
             }
-        }
+         
         throw new RemoteException ("Waiting for a barrel to connect...");
-
+        }
+        return null; // não deve chegar aqui, mas é para evitar erro de compilação
+        
     }
-
+    public void indexHackerNewsMatches(String[] searchTerms) throws RemoteException {
+        HackerNewsFetcher fetcher = new HackerNewsFetcher();
+        List<String> stories = fetcher.fetchMatchingStories(searchTerms);
+    
+        if (stories.isEmpty()) {
+            System.out.println("Nenhuma notícia encontrada com os termos fornecidos.");
+            return;
+        }
+        putUrl(stories.stream().collect(Collectors.toSet()));
+    }
+    
     public void addBarrel (String ip_port) throws RemoteException{
 
         synchronized (availableBarrels) {
