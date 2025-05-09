@@ -14,12 +14,12 @@ import jdk.jfr.MemoryAddress;
 
 public class Gateway extends UnicastRemoteObject implements Gateway_int {
     BlockingQueue <String> toBeProcessed;
-    Set <String> availableBarrels;
+    BlockingQueue <String> availableBarrels;
 
     public Gateway () throws RemoteException {
         super ();
         toBeProcessed = new LinkedBlockingQueue <String> ();
-        availableBarrels = new HashSet<>();
+        availableBarrels = new LinkedBlockingQueue <String>();
     
     }
 
@@ -83,6 +83,8 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
                 System.out.println("You're connected to a barrel!");
                 
                 availableBarrels.offer(ip_port); // se funcionar, mete no fim
+                
+                availableBarrels.offer(ip_port); // se funcionar, mete no fim
                 return results;
 
             } catch (Exception e) {
@@ -122,7 +124,7 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         }
     }
 
-    public Set <String> getAvailableBarrels () throws RemoteException{
+    public BlockingQueue <String> getAvailableBarrels () throws RemoteException{
         
         synchronized (availableBarrels) {
             return availableBarrels;
@@ -151,6 +153,17 @@ public class Gateway extends UnicastRemoteObject implements Gateway_int {
         }
         throw new RemoteException ("Waiting for a barrel to connect...");
 
+    }
+
+    public void indexHackerNewsMatches(String[] searchTerms) throws RemoteException {
+        HackerNewsFetcher fetcher = new HackerNewsFetcher();
+        List<String> stories = fetcher.fetchMatchingStories(searchTerms);
+    
+        if (stories.isEmpty()) {
+            System.out.println("Nenhuma notícia encontrada com os termos fornecidos.");
+            return;
+        }
+        putUrl(stories.stream().collect(Collectors.toSet()));
     }
     
 

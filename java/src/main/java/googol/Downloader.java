@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.BlockingQueue;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -83,7 +83,7 @@ public class Downloader {
             }
 
             // Verificar se existem barrels disponíveis
-            Set<String> availableBarrels = gateway.getAvailableBarrels(); 
+            BlockingQueue <String> availableBarrels = gateway.getAvailableBarrels(); 
             Barrel_int barrel;
 
             // Se não houver barrels disponíveis, espera até que um esteja disponível
