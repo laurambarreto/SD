@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class Barrel extends UnicastRemoteObject implements Barrel_int, Serializa
             Barrel_int barrel;
             
             try {  
-                Set <String> availableBarrels = gateway.getAvailableBarrels();
+                BlockingQueue <String> availableBarrels = gateway.getAvailableBarrels();
                 if (availableBarrels == null || availableBarrels.isEmpty())  throw new RemoteException ("Waiting for a barrel to connect...");
                 for (String ip_port: availableBarrels){
                     String [] ipport = ip_port.split (" ");
