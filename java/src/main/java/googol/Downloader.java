@@ -58,9 +58,10 @@ public class Downloader {
             String quote = doc.body().text().substring (0,50);            
             pageElems.add (quote); 
 
-            StringTokenizer st = new StringTokenizer(doc.body().text(), " \t\n\r\f.,;:!?()[]{}<>\"'`~@#$%^&*-+=|\\/„“”’‘…—–_•°·");
-            ArrayList<String> words = new ArrayList<>(); // adicionar todas as palavras encontradas a um Array 
+            StringTokenizer st = new StringTokenizer(doc.body().text(), " \t\n\r\f.,;:!?()[]{}<>\"'`~@#$%^&*-+=|\\/„“”’‘…—–_•°·"); // sem elementos como pontuações ou quebras de linha, etc.
+            ArrayList <String> words = new ArrayList<>(); // ArrayList para guardar as palavras da página
             ConcurrentHashMap <String, Integer> wordCount = new ConcurrentHashMap <String, Integer>();
+
             while (st.hasMoreTokens()){ 
                 String word = st.nextToken();
                 words.add (word);
